@@ -1,6 +1,9 @@
 package main
 
 import (
+	"time"
+
+	"github.com/joho/godotenv"
 	"github.com/sirupsen/logrus"
 )
 
@@ -8,6 +11,18 @@ var Version = "Development"
 
 func main() {
 	logrus.Infof("Server-Monitor %q started", Version)
+
+	// Performance metrics
+	startTime := time.Now()
+	defer func() {
+		logrus.Infof("Server-Monitor %q executed in %dms", Version, time.Since(startTime).Milliseconds())
+	}()
+
+	// Enviroment variable
+	err := godotenv.Load()
+	if err != nil {
+		logrus.Fatalf("Error loading .env file: %s", err)
+	}
 
 	// Get OS statistics
 	memStats, err := GetMemoryStats()
@@ -42,12 +57,15 @@ func main() {
 	// Alerting logic
 	if tempBoard > THRESHOLD_TEMP {
 		logrus.Infof("CPU Temperature %.2f above threshold of %.2f: Sending email alert", tempBoard, THRESHOLD_TEMP)
-		SendEmailAlert()
+		err = SendEmailAlert()
 	} else if memoryUsagePercent > THRESHOLD_MEM {
 		logrus.Infof("Memory usage %.2f%% above threshold %.2f%%: Sending email alert", memoryUsagePercent, THRESHOLD_MEM)
-		SendEmailAlert()
+		err = SendEmailAlert()
 	} else if cpuUsagePercent > THRESHOLD_CPU {
 		logrus.Infof("CPU usage %.2f%% above threshold %.2f%%: Sending email alert", cpuUsagePercent, THRESHOLD_CPU)
-		SendEmailAlert()
+		err = SendEmailAlert()
+	}
+	if err != nil {
+		logrus.Fatalf("Error sending email alert: %s", err)
 	}
 }
