@@ -55,17 +55,20 @@ func main() {
 	logrus.Infof("- Temperature  %.2fC", tempBoard)
 
 	// Alerting logic
+	doSendAlert := false
 	if tempBoard > THRESHOLD_TEMP {
 		logrus.Infof("CPU Temperature %.2f above threshold of %.2f: Sending email alert", tempBoard, THRESHOLD_TEMP)
-		err = SendEmailAlert()
+		doSendAlert = true
 	} else if memoryUsagePercent > THRESHOLD_MEM {
 		logrus.Infof("Memory usage %.2f%% above threshold %.2f%%: Sending email alert", memoryUsagePercent, THRESHOLD_MEM)
-		err = SendEmailAlert()
+		doSendAlert = true
 	} else if cpuUsagePercent > THRESHOLD_CPU {
 		logrus.Infof("CPU usage %.2f%% above threshold %.2f%%: Sending email alert", cpuUsagePercent, THRESHOLD_CPU)
-		err = SendEmailAlert()
+		doSendAlert = true
 	}
-	if err != nil {
-		logrus.Fatalf("Error sending email alert: %s", err)
+	if doSendAlert {
+		if err = SendEmailAlert(tempBoard, memoryUsagePercent, cpuUsagePercent); err != nil {
+			logrus.Fatalf("Error sending email alert: %s", err)
+		}
 	}
 }

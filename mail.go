@@ -7,9 +7,9 @@ import (
 	"github.com/wneessen/go-mail"
 )
 
-func SendEmailAlert() error {
+func SendEmailAlert(tempBoard, memoryUsagePercent, cpuUsagePercent float32) error {
 	var subject = "RaspberrypPI Tor Relay server-monitor alert"
-	var body = "It's on fire!"
+	var body = fmt.Sprintf("Board temperature: %.2f%%\nMemory Usage: %.2f%%\nCPU Usage: %.2fc\n", tempBoard, memoryUsagePercent, cpuUsagePercent)
 	var fromEmail = os.Getenv("SOURCE_EMAIL_ADDRESS")
 	var toEmail = os.Getenv("TARGET_EMAIL_ADDRESS")
 
