@@ -68,7 +68,7 @@ func main() {
 	}
 	if doSendAlert {
 		if err = SendEmailAlert(tempBoard, memoryUsagePercent, cpuUsagePercent); err != nil {
-			logrus.Fatalf("Error sending email alert: %s", err)
+			logrus.Errorf("Error sending email alert: %s", err)
 		}
 	}
 }

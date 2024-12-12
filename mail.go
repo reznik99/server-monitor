@@ -3,13 +3,19 @@ package main
 import (
 	"fmt"
 	"os"
+	"time"
 
 	"github.com/wneessen/go-mail"
 )
 
 func SendEmailAlert(tempBoard, memoryUsagePercent, cpuUsagePercent float32) error {
 	var subject = "RaspberrypPI Tor Relay server-monitor alert"
-	var body = fmt.Sprintf("Board temperature: %.2f%%\nMemory Usage: %.2f%%\nCPU Usage: %.2fc\n", tempBoard, memoryUsagePercent, cpuUsagePercent)
+	var body = fmt.Sprintf(`
+	Board temperature: %.2f%%
+	Memory Usage: %.2f%%
+	CPU Usage: %.2fc
+	Datetime: %s
+	`, tempBoard, memoryUsagePercent, cpuUsagePercent, time.Now().Format(time.RFC822))
 	var fromEmail = os.Getenv("SOURCE_EMAIL_ADDRESS")
 	var toEmail = os.Getenv("TARGET_EMAIL_ADDRESS")
 
@@ -26,9 +32,5 @@ func SendEmailAlert(tempBoard, memoryUsagePercent, cpuUsagePercent float32) erro
 	msg.SetBodyString(mail.TypeTextPlain, body)
 
 	// Send email
-	if err := msg.WriteToSendmail(); err != nil {
-		return fmt.Errorf("send mail err: %s", err)
-	}
-
-	return nil
+	return msg.WriteToSendmail()
 }
