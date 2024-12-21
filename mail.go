@@ -17,7 +17,7 @@ func SendEmailAlert(stats Stats) error {
 	var To = os.Getenv("TARGET_EMAIL_ADDRESS")
 	var HostName, _ = os.Hostname()
 	var Subject = fmt.Sprintf("%s server-monitor alert", ServerName)
-	// TODO: More data such as memory used/total + networking data
+
 	var data = EmailTemplateData{
 		Subject:           Subject,
 		TempBoard:         fmt.Sprintf("%.2fc", stats.Temperature),

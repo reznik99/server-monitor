@@ -33,56 +33,31 @@ func main() {
 		logrus.Infof("Server-Monitor %s executed in %dms", Version, time.Since(startTime).Milliseconds())
 	}()
 
-	// Enviroment variable
+	// Load enviroment variables
 	err := godotenv.Load()
 	if err != nil {
 		logrus.Fatalf("Error loading .env file: %s", err)
 	}
 
 	// Get OS statistics
-	memStats, err := GetMemoryStats()
+	stats, err := GetAllStats()
 	if err != nil {
-		logrus.Errorf("Failed to get memory statistics: %s", err)
-	}
-	cpuStats, err := GetCPUStats()
-	if err != nil {
-		logrus.Errorf("Failed to get cpu statistics: %s", err)
-	}
-	netStats, err := GetNetworkStats()
-	if err != nil {
-		logrus.Errorf("Failed to get network statistics: %s", err)
-	}
-	uptime, err := GetUptime()
-	if err != nil {
-		logrus.Errorf("Failed to get uptime: %s", err)
-	}
-	tempBoard, err := GetBoardTemp()
-	if err != nil {
-		logrus.Errorf("Failed to get read board temperature: %s", err)
-	}
-
-	stats := Stats{
-		Memory:           memStats,
-		MemoryPercentage: 100 - (float32(memStats.Total-memStats.Used) / float32(memStats.Total) * 100),
-		CPU:              cpuStats,
-		CPUPercentage:    float32(cpuStats.Total-cpuStats.Idle) / float32(cpuStats.Total) * 100,
-		Net:              netStats[0],
-		Temperature:      tempBoard,
-		Uptime:           uptime,
+		logrus.Fatalf("Error getting statistics: %s", err)
 	}
 
 	// Print statistics
 	logrus.Info("Raw stats:")
-	logrus.Infof("- Memory  -> Tot:  %v | Used: %v | Free: %v", HumanFriendlyBytes(memStats.Total), HumanFriendlyBytes(memStats.Used), HumanFriendlyBytes(memStats.Free))
-	logrus.Infof("- CPU     -> Tot:  %v | Idle: %v | System: %v | User: %v", cpuStats.Total, cpuStats.Idle, cpuStats.System, cpuStats.User)
-	logrus.Infof("- Network -> Name: %v | Rx: %v | Tx: %v", netStats[0].Name, HumanFriendlyBytes(netStats[0].RxBytes), HumanFriendlyBytes(netStats[0].TxBytes))
+	logrus.Infof("- Memory  -> Tot:  %v | Used: %v | Free: %v", HumanFriendlyBytes(stats.Memory.Total), HumanFriendlyBytes(stats.Memory.Used), HumanFriendlyBytes(stats.Memory.Free))
+	logrus.Infof("- CPU     -> Tot:  %v | Idle: %v | System: %v | User: %v", stats.CPU.Total, stats.CPU.Idle, stats.CPU.System, stats.CPU.User)
+	logrus.Infof("- Network -> Name: %v | Rx: %v | Tx: %v", stats.Net.Name, HumanFriendlyBytes(stats.Net.RxBytes), HumanFriendlyBytes(stats.Net.TxBytes))
+	logrus.Infof("- Uptime  -> %s", stats.Uptime.String())
 	logrus.Info("Derived stats:")
 	logrus.Infof("- Memory usage %.2f%%", stats.MemoryPercentage)
 	logrus.Infof("- CPU usage    %.2f%%", stats.CPUPercentage)
 	logrus.Infof("- Temperature  %.2fC", stats.Temperature)
 
 	// Alerting logic
-	// TODO: Networking alert checks
+	// TODO: Networking/uptime alert checks?
 	doSendAlert := false
 	if stats.Temperature > THRESHOLD_TEMP {
 		logrus.Infof("CPU Temperature %.2f above threshold of %.2f: Sending email alert", stats.Temperature, THRESHOLD_TEMP)
