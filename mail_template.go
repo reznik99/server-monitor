@@ -10,6 +10,7 @@ type alertData struct {
 	HostName           string
 }
 
+// TODO: Darkmode and/or banner
 const EmailTemplateStr = `
 <!DOCTYPE html>
 <html lang="en">

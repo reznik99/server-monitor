@@ -11,10 +11,13 @@ import (
 	"github.com/mackerelio/go-osstat/network"
 )
 
+// TODO: Load thresholds from .env
 const TEMPERATURE_FILE = "/sys/class/thermal/thermal_zone0/temp" // File with board temperature
 const THRESHOLD_TEMP = 60.00                                     // Degrees C
 const THRESHOLD_MEM = 75.00                                      // Memory Usage %
 const THRESHOLD_CPU = 75.00                                      // CPU Usage %
+
+// TODO: get LoadAvg and Uptime
 
 func GetMemoryStats() (*memory.Stats, error) {
 	return memory.Get()

@@ -9,6 +9,8 @@ import (
 
 var Version = "Development"
 
+// TODO: Load .env into globals (i.e To, From, Thresholds...)
+
 func main() {
 	logrus.Infof("Server-Monitor %q started", Version)
 
@@ -55,6 +57,7 @@ func main() {
 	logrus.Infof("- Temperature  %.2fC", tempBoard)
 
 	// Alerting logic
+	// TODO: Networking alert checks
 	doSendAlert := false
 	if tempBoard > THRESHOLD_TEMP {
 		logrus.Infof("CPU Temperature %.2f above threshold of %.2f: Sending email alert", tempBoard, THRESHOLD_TEMP)
