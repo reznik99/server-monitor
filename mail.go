@@ -10,7 +10,7 @@ import (
 	"github.com/wneessen/go-mail"
 )
 
-func SendEmailAlert(tempBoard, memoryUsagePercent, cpuUsagePercent float32) error {
+func SendEmailAlert(stats Stats) error {
 	// Get email data
 	var ServerName = os.Getenv("SERVER_NAME")
 	var From = os.Getenv("SOURCE_EMAIL_ADDRESS")
@@ -18,14 +18,19 @@ func SendEmailAlert(tempBoard, memoryUsagePercent, cpuUsagePercent float32) erro
 	var HostName, _ = os.Hostname()
 	var Subject = fmt.Sprintf("%s server-monitor alert", ServerName)
 	// TODO: More data such as memory used/total + networking data
-	var data = alertData{
-		Subject:            Subject,
-		TempBoard:          fmt.Sprintf("%.2fc", tempBoard),
-		MemoryUsagePercent: fmt.Sprintf("%.2f%%", memoryUsagePercent),
-		CPUUsagePercent:    fmt.Sprintf("%.2f%%", cpuUsagePercent),
-		DateTime:           time.Now().Format(time.RFC822),
-		ServerName:         ServerName,
-		HostName:           HostName,
+	var data = EmailTemplateData{
+		Subject:           Subject,
+		TempBoard:         fmt.Sprintf("%.2fc", stats.Temperature),
+		MemoryTotal:       HumanFriendlyBytes(stats.Memory.Total),
+		MemoryUsed:        HumanFriendlyBytes(stats.Memory.Used),
+		MemoryUsedPercent: fmt.Sprintf("%.2f%%", stats.MemoryPercentage),
+		CPUUsagePercent:   fmt.Sprintf("%.2f%%", stats.CPUPercentage),
+		RxBytes:           HumanFriendlyBytes(stats.Net.RxBytes),
+		TxBytes:           HumanFriendlyBytes(stats.Net.TxBytes),
+		UpTime:            stats.Uptime.String(),
+		DateTime:          time.Now().Format(time.RFC822),
+		ServerName:        ServerName,
+		HostName:          HostName,
 	}
 	// Parse email template
 	emailTmpl, err := template.New("EmailAlert").Parse(EmailTemplateStr)

@@ -5,10 +5,12 @@ import (
 	"os"
 	"strconv"
 	"strings"
+	"time"
 
 	"github.com/mackerelio/go-osstat/cpu"
 	"github.com/mackerelio/go-osstat/memory"
 	"github.com/mackerelio/go-osstat/network"
+	"github.com/mackerelio/go-osstat/uptime"
 )
 
 // TODO: Load thresholds from .env
@@ -29,6 +31,10 @@ func GetCPUStats() (*cpu.Stats, error) {
 
 func GetNetworkStats() ([]network.Stats, error) {
 	return network.Get()
+}
+
+func GetUptime() (time.Duration, error) {
+	return uptime.Get()
 }
 
 func GetBoardTemp() (float32, error) {
