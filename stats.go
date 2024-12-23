@@ -15,14 +15,6 @@ import (
 	"github.com/sirupsen/logrus"
 )
 
-// TODO: Load thresholds from .env
-const TEMPERATURE_FILE = "/sys/class/thermal/thermal_zone0/temp" // File with board temperature
-const THRESHOLD_TEMP = 60.00                                     // Degrees C
-const THRESHOLD_MEM = 75.00                                      // Memory Usage %
-const THRESHOLD_CPU = 75.00                                      // CPU Usage %
-
-// TODO: get LoadAvg
-
 func GetAllStats() (Stats, error) {
 	var err error
 	var stats Stats
@@ -70,13 +62,13 @@ func getLoadAvg() (*loadavg.Stats, error) {
 	return loadavg.Get()
 }
 
-func getNetworkStats() (network.Stats, error) {
+func getNetworkStats() (*network.Stats, error) {
 	stats, err := network.Get()
 	if err != nil {
-		return network.Stats{}, err
+		return &network.Stats{}, err
 	}
 
-	return stats[0], nil
+	return &stats[0], nil
 }
 
 func getUptime() (time.Duration, error) {
@@ -94,6 +86,27 @@ func getBoardTemp() (float32, error) {
 		return -1, err
 	}
 	return float32(intFloatTemp) / 1000, nil
+}
+
+func firstOrDefaultFloat(overrideVal string, defaultVal float32) float32 {
+	if overrideVal != "" {
+		overrideFlt, err := strconv.ParseFloat(overrideVal, 32)
+		if err != nil {
+			logrus.Warnf("Failed to parse threshold: %s", err)
+			return defaultVal
+		}
+		return float32(overrideFlt)
+	}
+
+	return defaultVal
+}
+
+func firstOrDefault(val string, defaultVal string) string {
+	if val == "" {
+		return defaultVal
+	} else {
+		return val
+	}
 }
 
 // Convert byte length into human friendly string such as 55.55KBytes or 22.22MBytes

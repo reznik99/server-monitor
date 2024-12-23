@@ -12,11 +12,9 @@ import (
 
 func SendEmailAlert(stats Stats) error {
 	// Get email data
-	var ServerName = os.Getenv("SERVER_NAME")
 	var From = os.Getenv("SOURCE_EMAIL_ADDRESS")
 	var To = os.Getenv("TARGET_EMAIL_ADDRESS")
-	var HostName, _ = os.Hostname()
-	var Subject = fmt.Sprintf("%s server-monitor alert", ServerName)
+	var Subject = fmt.Sprintf("%s server-monitor alert", SERVER_NAME)
 
 	var data = EmailTemplateData{
 		Subject:           Subject,
@@ -30,8 +28,8 @@ func SendEmailAlert(stats Stats) error {
 		TxBytes:           Humanize(stats.Net.TxBytes),
 		UpTime:            stats.Uptime.String(),
 		DateTime:          time.Now().Format(time.RFC822),
-		ServerName:        ServerName,
-		HostName:          HostName,
+		ServerName:        SERVER_NAME,
+		HostName:          HOST_NAME,
 	}
 	// Parse email template
 	emailTmpl, err := template.New("EmailAlert").Parse(EmailTemplateStr)

@@ -1,6 +1,7 @@
 package main
 
 import (
+	"os"
 	"time"
 
 	"github.com/joho/godotenv"
@@ -11,35 +12,53 @@ import (
 	"github.com/sirupsen/logrus"
 )
 
-var Version = "Development"
-
-// TODO: Load .env into globals (i.e To, From, Thresholds...)
+var (
+	Version          string  = "Development"                           // Tagged version of binary (from git)
+	TEMPERATURE_FILE string  = "/sys/class/thermal/thermal_zone0/temp" // File with board temperature
+	THRESHOLD_TEMP   float32 = 60.00                                   // Degrees C
+	THRESHOLD_MEM    float32 = 75.00                                   // Memory Usage %
+	THRESHOLD_CPU    float32 = 75.00                                   // CPU Usage %
+	HOST_NAME        string  = "N/A"                                   // Hostname of machine
+	SERVER_NAME      string  = "N/A"                                   // Custom server name for alert email subject
+)
 
 type Stats struct {
 	Memory           *memory.Stats
-	MemoryPercentage float32
 	CPU              *cpu.Stats
-	CPUPercentage    float32
 	LoadAvg          *loadavg.Stats
-	Net              network.Stats
-	Temperature      float32
+	Net              *network.Stats
 	Uptime           time.Duration
+	MemoryPercentage float32
+	CPUPercentage    float32
+	Temperature      float32
+}
+
+func init() {
+	// Load enviroment variables
+	if err := godotenv.Load(); err != nil {
+		logrus.Fatalf("Error loading .env file: %s", err)
+	}
+
+	hostname, err := os.Hostname()
+	if err != nil {
+		logrus.Fatalf("Error getting hostname: %s", err)
+	}
+
+	// Allow .env override of thresholds and parameters
+	HOST_NAME = firstOrDefault(hostname, HOST_NAME)
+	SERVER_NAME = firstOrDefault(os.Getenv("SERVER_NAME"), SERVER_NAME)
+	THRESHOLD_TEMP = firstOrDefaultFloat(os.Getenv("THRESHOLD_TEMP"), THRESHOLD_TEMP)
+	THRESHOLD_MEM = firstOrDefaultFloat(os.Getenv("THRESHOLD_MEM"), THRESHOLD_MEM)
+	THRESHOLD_CPU = firstOrDefaultFloat(os.Getenv("THRESHOLD_CPU"), THRESHOLD_CPU)
+
+	logrus.Infof("Thresholds - TEMP: %.2fc | MEM: %.2f%% | CPU: %.2f%%", THRESHOLD_TEMP, THRESHOLD_MEM, THRESHOLD_CPU)
 }
 
 func main() {
-	logrus.Infof("Server-Monitor %s started", Version)
-
-	// Performance metrics
 	startTime := time.Now()
 	defer func() {
 		logrus.Infof("Server-Monitor %s executed in %dms", Version, time.Since(startTime).Milliseconds())
 	}()
-
-	// Load enviroment variables
-	err := godotenv.Load()
-	if err != nil {
-		logrus.Fatalf("Error loading .env file: %s", err)
-	}
 
 	// Get OS statistics
 	stats, err := GetAllStats()
@@ -70,11 +89,11 @@ func main() {
 		logrus.Infof("CPU usage %.2f%% above threshold %.2f%%", stats.CPUPercentage, THRESHOLD_CPU)
 		doSendAlert = true
 	}
-	if stats.LoadAvg.Loadavg5*100 > THRESHOLD_CPU {
+	if float32(stats.LoadAvg.Loadavg5*100) > THRESHOLD_CPU {
 		logrus.Infof("CPU load avg (5min) %.2f%% above threshold %.2f%%", stats.LoadAvg.Loadavg5*100, THRESHOLD_CPU)
 		doSendAlert = true
 	}
-	if stats.LoadAvg.Loadavg15*100 > THRESHOLD_CPU {
+	if float32(stats.LoadAvg.Loadavg15*100) > THRESHOLD_CPU {
 		logrus.Infof("CPU load avg (15min) %.2f%% above threshold %.2f%%", stats.LoadAvg.Loadavg15*100, THRESHOLD_CPU)
 		doSendAlert = true
 	}
