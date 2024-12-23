@@ -15,6 +15,8 @@ import (
 	"github.com/sirupsen/logrus"
 )
 
+const DAY = time.Hour * 24
+
 func GetAllStats() (Stats, error) {
 	var err error
 	var stats Stats
@@ -109,18 +111,29 @@ func firstOrDefault(val string, defaultVal string) string {
 	}
 }
 
-// Convert byte length into human friendly string such as 55.55KBytes or 22.22MBytes
+// returns a stringified version of duration including days
+func durationToString(val time.Duration) string {
+	uptimeString := val.String()
+	if val >= DAY {
+		days := val / DAY
+		hours := val - days*DAY
+		uptimeString = fmt.Sprintf("%dd%s", days, hours)
+	}
+	return uptimeString
+}
+
+// Convert byte length into human friendly string such as 950Bytes or 55.55KB or 22.22MB
 func Humanize(lengthInBytes uint64) string {
 	length := float64(lengthInBytes)
 	if length < 1024 {
 		return fmt.Sprintf("%.2fBytes", length)
 	} else if length/1024 < 1024 {
-		return fmt.Sprintf("%.2fKBytes", length/1024)
+		return fmt.Sprintf("%.2fKB", length/1024)
 	} else if length/1024/1024 < 1024 {
-		return fmt.Sprintf("%.2fMBytes", length/1024/1024)
+		return fmt.Sprintf("%.2fMB", length/1024/1024)
 	} else if length/1024/1024/1024 < 1024 {
-		return fmt.Sprintf("%.2fGBytes", length/1024/1024/1024)
+		return fmt.Sprintf("%.2fGB", length/1024/1024/1024)
 	} else {
-		return fmt.Sprintf("%.2fTBytes", length/1024/1024/1024/1024)
+		return fmt.Sprintf("%.2fTB", length/1024/1024/1024/1024)
 	}
 }
