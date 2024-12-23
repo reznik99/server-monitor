@@ -72,7 +72,7 @@ func main() {
 	logrus.Infof("- CPU     -> Percent: %.2f%% | Tot:  %v | Idle: %v | System: %v | User: %v", stats.CPUPercentage, stats.CPU.Total, stats.CPU.Idle, stats.CPU.System, stats.CPU.User)
 	logrus.Infof("- LoadAvg -> 1m:      %v | 5m: %v | 15m: %v", stats.LoadAvg.Loadavg1, stats.LoadAvg.Loadavg5, stats.LoadAvg.Loadavg15)
 	logrus.Infof("- Network -> Name:    %v | Rx: %v | Tx: %v", stats.Net.Name, Humanize(stats.Net.RxBytes), Humanize(stats.Net.TxBytes))
-	logrus.Infof("- Uptime  -> %s", stats.Uptime.String())
+	logrus.Infof("- Uptime  -> %s", durationToString(stats.Uptime))
 	logrus.Infof("- Temperature  %.2fc", stats.Temperature)
 
 	// Alerting logic

@@ -30,6 +30,7 @@ func SendEmailAlert(stats Stats) error {
 		DateTime:          time.Now().Format(time.RFC822),
 		ServerName:        SERVER_NAME,
 		HostName:          HOST_NAME,
+		ProgVersion:       Version,
 	}
 	// Parse email template
 	emailTmpl, err := template.New("EmailAlert").Parse(EmailTemplateStr)

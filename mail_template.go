@@ -14,6 +14,7 @@ type EmailTemplateData struct {
 	DateTime          string
 	ServerName        string
 	HostName          string
+	ProgVersion       string
 }
 
 // TODO: Darkmode and/or banner
@@ -38,7 +39,7 @@ const EmailTemplateStr = `
 		<li>HostName: {{.HostName}}</li>
 	</ul>
 	<br />
-	<p>EOM</p>
+	<p>server-monitor version "{{.ProgVersion}}"</p>
 </body>
 </html>
 `
