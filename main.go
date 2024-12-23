@@ -51,6 +51,7 @@ func main() {
 	logrus.Info("Raw stats:")
 	logrus.Infof("- Memory  -> Tot:  %v | Used: %v | Free: %v", HumanFriendlyBytes(stats.Memory.Total), HumanFriendlyBytes(stats.Memory.Used), HumanFriendlyBytes(stats.Memory.Free))
 	logrus.Infof("- CPU     -> Tot:  %v | Idle: %v | System: %v | User: %v", stats.CPU.Total, stats.CPU.Idle, stats.CPU.System, stats.CPU.User)
+	logrus.Infof("- LoadAvg -> 1m:   %v | 5m: %v | 15m: %v", stats.LoadAvg.Loadavg1, stats.LoadAvg.Loadavg5, stats.LoadAvg.Loadavg15)
 	logrus.Infof("- Network -> Name: %v | Rx: %v | Tx: %v", stats.Net.Name, HumanFriendlyBytes(stats.Net.RxBytes), HumanFriendlyBytes(stats.Net.TxBytes))
 	logrus.Infof("- Uptime  -> %s", stats.Uptime.String())
 	logrus.Info("Derived stats:")
