@@ -5,6 +5,7 @@ import (
 
 	"github.com/joho/godotenv"
 	"github.com/mackerelio/go-osstat/cpu"
+	"github.com/mackerelio/go-osstat/loadavg"
 	"github.com/mackerelio/go-osstat/memory"
 	"github.com/mackerelio/go-osstat/network"
 	"github.com/sirupsen/logrus"
@@ -19,6 +20,7 @@ type Stats struct {
 	MemoryPercentage float32
 	CPU              *cpu.Stats
 	CPUPercentage    float32
+	LoadAvg          *loadavg.Stats
 	Net              network.Stats
 	Temperature      float32
 	Uptime           time.Duration
@@ -57,7 +59,6 @@ func main() {
 	logrus.Infof("- Temperature  %.2fC", stats.Temperature)
 
 	// Alerting logic
-	// TODO: Networking/uptime alert checks?
 	doSendAlert := false
 	if stats.Temperature > THRESHOLD_TEMP {
 		logrus.Infof("CPU Temperature %.2f above threshold of %.2f: Sending email alert", stats.Temperature, THRESHOLD_TEMP)
@@ -69,6 +70,8 @@ func main() {
 		logrus.Infof("CPU usage %.2f%% above threshold %.2f%%: Sending email alert", stats.CPUPercentage, THRESHOLD_CPU)
 		doSendAlert = true
 	}
+	// TODO: network/uptime/loadavg alert checks
+
 	if doSendAlert {
 		if err = SendEmailAlert(stats); err != nil {
 			logrus.Errorf("Error sending email alert: %s", err)

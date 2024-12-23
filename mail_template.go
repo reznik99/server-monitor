@@ -7,6 +7,7 @@ type EmailTemplateData struct {
 	MemoryUsed        string
 	MemoryUsedPercent string
 	CPUUsagePercent   string
+	CPUUsageAvg       string
 	RxBytes           string
 	TxBytes           string
 	UpTime            string
@@ -29,7 +30,7 @@ const EmailTemplateStr = `
 	<ul>
 		<li>Board temperature: {{.TempBoard}}</li>
 		<li>Memory Usage: {{.MemoryUsedPercent}} [{{.MemoryUsed}}/{{.MemoryTotal}}]</li>
-		<li>CPU Usage: {{.CPUUsagePercent}}</li>
+		<li>CPU Usage: {{.CPUUsagePercent}} ({{.CPUUsageAvg}})</li>
 		<li>Network: Rx:{{.RxBytes}} Tx:{{.TxBytes}}</li>
 		<li>UpTime: {{.UpTime}}</li>
 		<li>DateTime: {{.DateTime}}</li>

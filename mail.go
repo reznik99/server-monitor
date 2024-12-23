@@ -25,6 +25,7 @@ func SendEmailAlert(stats Stats) error {
 		MemoryUsed:        HumanFriendlyBytes(stats.Memory.Used),
 		MemoryUsedPercent: fmt.Sprintf("%.2f%%", stats.MemoryPercentage),
 		CPUUsagePercent:   fmt.Sprintf("%.2f%%", stats.CPUPercentage),
+		CPUUsageAvg:       fmt.Sprintf("%f, %f, %f", stats.LoadAvg.Loadavg1, stats.LoadAvg.Loadavg5, stats.LoadAvg.Loadavg15),
 		RxBytes:           HumanFriendlyBytes(stats.Net.RxBytes),
 		TxBytes:           HumanFriendlyBytes(stats.Net.TxBytes),
 		UpTime:            stats.Uptime.String(),

@@ -8,6 +8,7 @@ import (
 	"time"
 
 	"github.com/mackerelio/go-osstat/cpu"
+	"github.com/mackerelio/go-osstat/loadavg"
 	"github.com/mackerelio/go-osstat/memory"
 	"github.com/mackerelio/go-osstat/network"
 	"github.com/mackerelio/go-osstat/uptime"
@@ -34,6 +35,10 @@ func GetAllStats() (Stats, error) {
 	if err != nil {
 		logrus.Errorf("Failed to get cpu statistics: %s", err)
 	}
+	stats.LoadAvg, err = getLoadAvg()
+	if err != nil {
+		logrus.Errorf("Failed to get load average: %s", err)
+	}
 	stats.Net, err = getNetworkStats()
 	if err != nil {
 		logrus.Errorf("Failed to get network statistics: %s", err)
@@ -59,6 +64,10 @@ func getMemoryStats() (*memory.Stats, error) {
 
 func getCPUStats() (*cpu.Stats, error) {
 	return cpu.Get()
+}
+
+func getLoadAvg() (*loadavg.Stats, error) {
+	return loadavg.Get()
 }
 
 func getNetworkStats() (network.Stats, error) {
