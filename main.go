@@ -49,31 +49,38 @@ func main() {
 
 	// Print statistics
 	logrus.Info("Raw stats:")
-	logrus.Infof("- Memory  -> Tot:  %v | Used: %v | Free: %v", HumanFriendlyBytes(stats.Memory.Total), HumanFriendlyBytes(stats.Memory.Used), HumanFriendlyBytes(stats.Memory.Free))
-	logrus.Infof("- CPU     -> Tot:  %v | Idle: %v | System: %v | User: %v", stats.CPU.Total, stats.CPU.Idle, stats.CPU.System, stats.CPU.User)
-	logrus.Infof("- LoadAvg -> 1m:   %v | 5m: %v | 15m: %v", stats.LoadAvg.Loadavg1, stats.LoadAvg.Loadavg5, stats.LoadAvg.Loadavg15)
-	logrus.Infof("- Network -> Name: %v | Rx: %v | Tx: %v", stats.Net.Name, HumanFriendlyBytes(stats.Net.RxBytes), HumanFriendlyBytes(stats.Net.TxBytes))
+	logrus.Infof("- Memory  -> Percent: %.2f%% | Tot:  %v | Used: %v | Free: %v", stats.MemoryPercentage, Humanize(stats.Memory.Total), Humanize(stats.Memory.Used), Humanize(stats.Memory.Free))
+	logrus.Infof("- CPU     -> Percent: %.2f%% | Tot:  %v | Idle: %v | System: %v | User: %v", stats.CPUPercentage, stats.CPU.Total, stats.CPU.Idle, stats.CPU.System, stats.CPU.User)
+	logrus.Infof("- LoadAvg -> 1m:      %v | 5m: %v | 15m: %v", stats.LoadAvg.Loadavg1, stats.LoadAvg.Loadavg5, stats.LoadAvg.Loadavg15)
+	logrus.Infof("- Network -> Name:    %v | Rx: %v | Tx: %v", stats.Net.Name, Humanize(stats.Net.RxBytes), Humanize(stats.Net.TxBytes))
 	logrus.Infof("- Uptime  -> %s", stats.Uptime.String())
-	logrus.Info("Derived stats:")
-	logrus.Infof("- Memory usage %.2f%%", stats.MemoryPercentage)
-	logrus.Infof("- CPU usage    %.2f%%", stats.CPUPercentage)
-	logrus.Infof("- Temperature  %.2fC", stats.Temperature)
+	logrus.Infof("- Temperature  %.2fc", stats.Temperature)
 
 	// Alerting logic
 	doSendAlert := false
 	if stats.Temperature > THRESHOLD_TEMP {
-		logrus.Infof("CPU Temperature %.2f above threshold of %.2f: Sending email alert", stats.Temperature, THRESHOLD_TEMP)
-		doSendAlert = true
-	} else if stats.MemoryPercentage > THRESHOLD_MEM {
-		logrus.Infof("Memory usage %.2f%% above threshold %.2f%%: Sending email alert", stats.MemoryPercentage, THRESHOLD_MEM)
-		doSendAlert = true
-	} else if stats.CPUPercentage > THRESHOLD_CPU {
-		logrus.Infof("CPU usage %.2f%% above threshold %.2f%%: Sending email alert", stats.CPUPercentage, THRESHOLD_CPU)
+		logrus.Infof("CPU Temperature %.2fc above threshold of %.2fc", stats.Temperature, THRESHOLD_TEMP)
 		doSendAlert = true
 	}
-	// TODO: network/uptime/loadavg alert checks
+	if stats.MemoryPercentage > THRESHOLD_MEM {
+		logrus.Infof("Memory usage %.2f%% above threshold %.2f%%", stats.MemoryPercentage, THRESHOLD_MEM)
+		doSendAlert = true
+	}
+	if stats.CPUPercentage > THRESHOLD_CPU {
+		logrus.Infof("CPU usage %.2f%% above threshold %.2f%%", stats.CPUPercentage, THRESHOLD_CPU)
+		doSendAlert = true
+	}
+	if stats.LoadAvg.Loadavg5*100 > THRESHOLD_CPU {
+		logrus.Infof("CPU load avg (5min) %.2f%% above threshold %.2f%%", stats.LoadAvg.Loadavg5*100, THRESHOLD_CPU)
+		doSendAlert = true
+	}
+	if stats.LoadAvg.Loadavg15*100 > THRESHOLD_CPU {
+		logrus.Infof("CPU load avg (15min) %.2f%% above threshold %.2f%%", stats.LoadAvg.Loadavg15*100, THRESHOLD_CPU)
+		doSendAlert = true
+	}
 
 	if doSendAlert {
+		logrus.Info("Sending email alert")
 		if err = SendEmailAlert(stats); err != nil {
 			logrus.Errorf("Error sending email alert: %s", err)
 		}

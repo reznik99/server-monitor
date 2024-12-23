@@ -96,7 +96,8 @@ func getBoardTemp() (float32, error) {
 	return float32(intFloatTemp) / 1000, nil
 }
 
-func HumanFriendlyBytes(lengthInBytes uint64) string {
+// Convert byte length into human friendly string such as 55.55KBytes or 22.22MBytes
+func Humanize(lengthInBytes uint64) string {
 	length := float64(lengthInBytes)
 	if length < 1024 {
 		return fmt.Sprintf("%.2fBytes", length)
