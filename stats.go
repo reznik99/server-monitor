@@ -44,6 +44,7 @@ func GetAllStats() (Stats, error) {
 	stats.Temperature, err = getBoardTemp()
 	if err != nil {
 		logrus.Errorf("Failed to get read board temperature: %s", err)
+		err = nil // don't fail
 	}
 	// Get nice % values
 	stats.MemoryPercentage = 100 - (float32(stats.Memory.Total-stats.Memory.Used) / float32(stats.Memory.Total) * 100)
