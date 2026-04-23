@@ -2,6 +2,7 @@
 package monitor
 
 import (
+	"errors"
 	"fmt"
 	"os"
 	"strconv"
@@ -30,37 +31,42 @@ type Stats struct {
 }
 
 func GetAllStats(temperatureFile string) (Stats, error) {
-	var err error
 	var stats Stats
-	// Get OS Stats
-	stats.Memory, err = getMemoryStats()
-	if err != nil {
-		logrus.Errorf("Failed to get memory statistics: %s", err)
+	var err error
+	var e error
+
+	stats.Memory, e = getMemoryStats()
+	if e != nil {
+		err = errors.Join(err, fmt.Errorf("memory: %w", e))
 	}
-	stats.CPU, err = getCPUStats()
-	if err != nil {
-		logrus.Errorf("Failed to get cpu statistics: %s", err)
+	stats.CPU, e = getCPUStats()
+	if e != nil {
+		err = errors.Join(err, fmt.Errorf("cpu: %w", e))
 	}
-	stats.LoadAvg, err = getLoadAvg()
-	if err != nil {
-		logrus.Errorf("Failed to get load average: %s", err)
+	stats.LoadAvg, e = getLoadAvg()
+	if e != nil {
+		err = errors.Join(err, fmt.Errorf("loadavg: %w", e))
 	}
-	stats.Net, err = getNetworkStats()
-	if err != nil {
-		logrus.Errorf("Failed to get network statistics: %s", err)
+	stats.Net, e = getNetworkStats()
+	if e != nil {
+		err = errors.Join(err, fmt.Errorf("network: %w", e))
 	}
-	stats.Uptime, err = getUptime()
-	if err != nil {
-		logrus.Errorf("Failed to get uptime: %s", err)
+	stats.Uptime, e = getUptime()
+	if e != nil {
+		err = errors.Join(err, fmt.Errorf("uptime: %w", e))
 	}
-	stats.Temperature, err = getBoardTemp(temperatureFile)
-	if err != nil {
-		logrus.Errorf("Failed to get read board temperature: %s", err)
-		err = nil // don't fail
+	stats.Temperature, e = getBoardTemp(temperatureFile)
+	if e != nil {
+		logrus.Warnf("Failed to read board temperature: %s", e)
 	}
-	// Get nice % values
-	stats.MemoryPercentage = 100 - (float32(stats.Memory.Total-stats.Memory.Used) / float32(stats.Memory.Total) * 100)
-	stats.CPUPercentage = float32(stats.CPU.Total-stats.CPU.Idle) / float32(stats.CPU.Total) * 100
+
+	// Get nice % values (guard against nil pointers)
+	if stats.Memory != nil {
+		stats.MemoryPercentage = 100 - (float32(stats.Memory.Total-stats.Memory.Used) / float32(stats.Memory.Total) * 100)
+	}
+	if stats.CPU != nil {
+		stats.CPUPercentage = float32(stats.CPU.Total-stats.CPU.Idle) / float32(stats.CPU.Total) * 100
+	}
 
 	return stats, err
 }
