@@ -1,6 +1,7 @@
 package main
 
 import (
+	"flag"
 	"os"
 	"time"
 
@@ -8,6 +9,8 @@ import (
 
 	"github.com/reznik99/server-monitor/internal/monitor"
 )
+
+var testMode = flag.Bool("test", false, "Run a test: collect stats and send a test email alert")
 
 var (
 	Version         string  = "Development"                           // Tagged Version of binary (from git)
@@ -20,6 +23,7 @@ var (
 )
 
 func main() {
+	flag.Parse()
 	startTime := time.Now()
 	defer func() {
 		logrus.Infof("Server-Monitor %s executed in %dms", Version, time.Since(startTime).Milliseconds())
@@ -77,7 +81,7 @@ func main() {
 		doSendAlert = true
 	}
 
-	if doSendAlert {
+	if doSendAlert || *testMode {
 		logrus.Info("Sending email alert")
 		if err = monitor.SendEmailAlert(stats, serverName, hostName, Version); err != nil {
 			logrus.Errorf("Error sending email alert: %s", err)
