@@ -4,7 +4,6 @@ import (
 	"os"
 	"time"
 
-	"github.com/joho/godotenv"
 	"github.com/sirupsen/logrus"
 
 	"github.com/reznik99/server-monitor/internal/monitor"
@@ -20,32 +19,25 @@ var (
 	serverName      string  = "N/A"                                   // Custom server name for alert email subject
 )
 
-func init() {
-	// Load environment variables
-	if err := godotenv.Load(); err != nil {
-		logrus.Fatalf("Error loading .env file: %s", err)
-	}
+func main() {
+	startTime := time.Now()
+	defer func() {
+		logrus.Infof("Server-Monitor %s executed in %dms", Version, time.Since(startTime).Milliseconds())
+	}()
 
 	hostname, err := os.Hostname()
 	if err != nil {
 		logrus.Fatalf("Error getting hostname: %s", err)
 	}
 
-	// Allow .env override of thresholds and parameters
+	// Allow env override of thresholds and parameters
 	hostName = monitor.FirstOrDefault(hostname, hostName)
-	serverName = monitor.FirstOrDefault(os.Getenv("serverName"), serverName)
-	thresholdTemp = monitor.FirstOrDefaultFloat(os.Getenv("thresholdTemp"), thresholdTemp)
-	thresholdMem = monitor.FirstOrDefaultFloat(os.Getenv("thresholdMem"), thresholdMem)
-	thresholdCPU = monitor.FirstOrDefaultFloat(os.Getenv("thresholdCPU"), thresholdCPU)
+	serverName = monitor.FirstOrDefault(os.Getenv("SERVER_NAME"), serverName)
+	thresholdTemp = monitor.FirstOrDefaultFloat(os.Getenv("THRESHOLD_TEMP"), thresholdTemp)
+	thresholdMem = monitor.FirstOrDefaultFloat(os.Getenv("THRESHOLD_MEM"), thresholdMem)
+	thresholdCPU = monitor.FirstOrDefaultFloat(os.Getenv("THRESHOLD_CPU"), thresholdCPU)
 
 	logrus.Infof("Thresholds - TEMP: %.2fc | MEM: %.2f%% | CPU: %.2f%%", thresholdTemp, thresholdMem, thresholdCPU)
-}
-
-func main() {
-	startTime := time.Now()
-	defer func() {
-		logrus.Infof("Server-Monitor %s executed in %dms", Version, time.Since(startTime).Milliseconds())
-	}()
 
 	// Get OS statistics
 	stats, err := monitor.GetAllStats(temperatureFile)
