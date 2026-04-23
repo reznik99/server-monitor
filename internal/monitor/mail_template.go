@@ -17,7 +17,7 @@ type EmailTemplateData struct {
 	ProgVersion       string
 }
 
-// TODO: Darkmode and/or banner
+// EmailTemplateStr is the HTML template for alert emails. TODO: Darkmode and/or banner
 const EmailTemplateStr = `
 <!DOCTYPE html>
 <html lang="en">

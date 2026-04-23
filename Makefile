@@ -10,6 +10,7 @@ all: lint test build
 lint:
 	@echo "==> Linting..."
 	golangci-lint run ./...
+	staticcheck -checks 'all' ./...
 
 test:
 	@echo "==> Running tests..."

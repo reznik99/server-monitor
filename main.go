@@ -11,13 +11,13 @@ import (
 )
 
 var (
-	Version          string  = "Development"                           // Tagged version of binary (from git)
-	TEMPERATURE_FILE string  = "/sys/class/thermal/thermal_zone0/temp" // File with board temperature
-	THRESHOLD_TEMP   float32 = 60.00                                   // Degrees C
-	THRESHOLD_MEM    float32 = 75.00                                   // Memory Usage %
-	THRESHOLD_CPU    float32 = 75.00                                   // CPU Usage %
-	HOST_NAME        string  = "N/A"                                   // Hostname of machine
-	SERVER_NAME      string  = "N/A"                                   // Custom server name for alert email subject
+	Version         string  = "Development"                           // Tagged Version of binary (from git)
+	temperatureFile string  = "/sys/class/thermal/thermal_zone0/temp" // File with board temperature
+	thresholdTemp   float32 = 60.00                                   // Degrees C
+	thresholdMem    float32 = 75.00                                   // Memory Usage %
+	thresholdCPU    float32 = 75.00                                   // CPU Usage %
+	hostName        string  = "N/A"                                   // Hostname of machine
+	serverName      string  = "N/A"                                   // Custom server name for alert email subject
 )
 
 func init() {
@@ -32,13 +32,13 @@ func init() {
 	}
 
 	// Allow .env override of thresholds and parameters
-	HOST_NAME = monitor.FirstOrDefault(hostname, HOST_NAME)
-	SERVER_NAME = monitor.FirstOrDefault(os.Getenv("SERVER_NAME"), SERVER_NAME)
-	THRESHOLD_TEMP = monitor.FirstOrDefaultFloat(os.Getenv("THRESHOLD_TEMP"), THRESHOLD_TEMP)
-	THRESHOLD_MEM = monitor.FirstOrDefaultFloat(os.Getenv("THRESHOLD_MEM"), THRESHOLD_MEM)
-	THRESHOLD_CPU = monitor.FirstOrDefaultFloat(os.Getenv("THRESHOLD_CPU"), THRESHOLD_CPU)
+	hostName = monitor.FirstOrDefault(hostname, hostName)
+	serverName = monitor.FirstOrDefault(os.Getenv("serverName"), serverName)
+	thresholdTemp = monitor.FirstOrDefaultFloat(os.Getenv("thresholdTemp"), thresholdTemp)
+	thresholdMem = monitor.FirstOrDefaultFloat(os.Getenv("thresholdMem"), thresholdMem)
+	thresholdCPU = monitor.FirstOrDefaultFloat(os.Getenv("thresholdCPU"), thresholdCPU)
 
-	logrus.Infof("Thresholds - TEMP: %.2fc | MEM: %.2f%% | CPU: %.2f%%", THRESHOLD_TEMP, THRESHOLD_MEM, THRESHOLD_CPU)
+	logrus.Infof("Thresholds - TEMP: %.2fc | MEM: %.2f%% | CPU: %.2f%%", thresholdTemp, thresholdMem, thresholdCPU)
 }
 
 func main() {
@@ -48,7 +48,7 @@ func main() {
 	}()
 
 	// Get OS statistics
-	stats, err := monitor.GetAllStats(TEMPERATURE_FILE)
+	stats, err := monitor.GetAllStats(temperatureFile)
 	if err != nil {
 		logrus.Fatalf("Error getting statistics: %s", err)
 	}
@@ -64,30 +64,30 @@ func main() {
 
 	// Alerting logic
 	doSendAlert := false
-	if stats.Temperature > THRESHOLD_TEMP {
-		logrus.Infof("CPU Temperature %.2fc above threshold of %.2fc", stats.Temperature, THRESHOLD_TEMP)
+	if stats.Temperature > thresholdTemp {
+		logrus.Infof("CPU Temperature %.2fc above threshold of %.2fc", stats.Temperature, thresholdTemp)
 		doSendAlert = true
 	}
-	if stats.MemoryPercentage > THRESHOLD_MEM {
-		logrus.Infof("Memory usage %.2f%% above threshold %.2f%%", stats.MemoryPercentage, THRESHOLD_MEM)
+	if stats.MemoryPercentage > thresholdMem {
+		logrus.Infof("Memory usage %.2f%% above threshold %.2f%%", stats.MemoryPercentage, thresholdMem)
 		doSendAlert = true
 	}
-	if stats.CPUPercentage > THRESHOLD_CPU {
-		logrus.Infof("CPU usage %.2f%% above threshold %.2f%%", stats.CPUPercentage, THRESHOLD_CPU)
+	if stats.CPUPercentage > thresholdCPU {
+		logrus.Infof("CPU usage %.2f%% above threshold %.2f%%", stats.CPUPercentage, thresholdCPU)
 		doSendAlert = true
 	}
-	if float32(stats.LoadAvg.Loadavg5*100) > THRESHOLD_CPU {
-		logrus.Infof("CPU load avg (5min) %.2f%% above threshold %.2f%%", stats.LoadAvg.Loadavg5*100, THRESHOLD_CPU)
+	if float32(stats.LoadAvg.Loadavg5*100) > thresholdCPU {
+		logrus.Infof("CPU load avg (5min) %.2f%% above threshold %.2f%%", stats.LoadAvg.Loadavg5*100, thresholdCPU)
 		doSendAlert = true
 	}
-	if float32(stats.LoadAvg.Loadavg15*100) > THRESHOLD_CPU {
-		logrus.Infof("CPU load avg (15min) %.2f%% above threshold %.2f%%", stats.LoadAvg.Loadavg15*100, THRESHOLD_CPU)
+	if float32(stats.LoadAvg.Loadavg15*100) > thresholdCPU {
+		logrus.Infof("CPU load avg (15min) %.2f%% above threshold %.2f%%", stats.LoadAvg.Loadavg15*100, thresholdCPU)
 		doSendAlert = true
 	}
 
 	if doSendAlert {
 		logrus.Info("Sending email alert")
-		if err = monitor.SendEmailAlert(stats, SERVER_NAME, HOST_NAME, Version); err != nil {
+		if err = monitor.SendEmailAlert(stats, serverName, hostName, Version); err != nil {
 			logrus.Errorf("Error sending email alert: %s", err)
 		}
 	}

@@ -1,3 +1,4 @@
+// Package monitor collects OS-level health metrics and sends email alerts.
 package monitor
 
 import (
