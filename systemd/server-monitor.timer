@@ -1,9 +1,11 @@
+# /etc/systemd/system/server-monitor.timer
 [Unit]
-Description=Run Server Monitor every 5 minutes
+Description=Hourly sys check
+Requires=server-monitor.service
 
 [Timer]
 OnBootSec=1min
-OnUnitActiveSec=5min
+OnUnitActiveSec=60min
 
 [Install]
 WantedBy=timers.target

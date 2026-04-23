@@ -1,8 +1,14 @@
+# /etc/systemd/system/server-monitor.service
 [Unit]
-Description=Server Monitor - System health check and email alerting
-After=network.target
+Description=Server Monitoring & Alerting
+After=network-online.target
+Wants=network-online.target
 
 [Service]
-Type=oneshot
-ExecStart=/usr/local/bin/server-monitor
-EnvironmentFile=/etc/server-monitor/server-monitor.env
+WorkingDirectory=/home/Server-Monitor/
+ExecStart=/home/Server-Monitor/server-monitor
+User=reznik99
+
+[Install]
+WantedBy=multi-user.target
+
