@@ -8,6 +8,9 @@ type EmailTemplateData struct {
 	MemoryUsedPercent string
 	CPUUsagePercent   string
 	CPUUsageAvg       string
+	DiskTotal         string
+	DiskUsed          string
+	DiskUsedPercent   string
 	RxBytes           string
 	TxBytes           string
 	UpTime            string
@@ -15,6 +18,8 @@ type EmailTemplateData struct {
 	ServerName        string
 	HostName          string
 	ProgVersion       string
+	VPNHost           string
+	VPNReachable      string
 }
 
 // EmailTemplateStr is the HTML template for alert emails. TODO: Darkmode and/or banner
@@ -32,7 +37,9 @@ const EmailTemplateStr = `
 		<li>Board temperature: {{.TempBoard}}</li>
 		<li>Memory Usage: {{.MemoryUsedPercent}} [{{.MemoryUsed}}/{{.MemoryTotal}}]</li>
 		<li>CPU Usage: {{.CPUUsagePercent}} ({{.CPUUsageAvg}})</li>
-		<li>Network: Rx:{{.RxBytes}} Tx:{{.TxBytes}}</li>
+		<li>Disk Usage: {{.DiskUsedPercent}} [{{.DiskUsed}}/{{.DiskTotal}}]</li>
+		<li>Network: Rx:{{.RxBytes}} Tx:{{.TxBytes}}</li>{{if .VPNHost}}
+		<li>VPN: {{.VPNHost}} — {{.VPNReachable}}</li>{{end}}
 		<li>UpTime: {{.UpTime}}</li>
 		<li>DateTime: {{.DateTime}}</li>
 		<li>ServerName: {{.ServerName}}</li>

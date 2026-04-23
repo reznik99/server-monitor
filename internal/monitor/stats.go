@@ -4,9 +4,11 @@ package monitor
 import (
 	"errors"
 	"fmt"
+	"net"
 	"os"
 	"strconv"
 	"strings"
+	"syscall"
 	"time"
 
 	"github.com/mackerelio/go-osstat/cpu"
@@ -19,15 +21,24 @@ import (
 
 const DAY = time.Hour * 24
 
+type DiskStats struct {
+	Total      uint64
+	Used       uint64
+	Free       uint64
+	Percentage float32
+}
+
 type Stats struct {
 	Memory           *memory.Stats
 	CPU              *cpu.Stats
 	LoadAvg          *loadavg.Stats
 	Net              *network.Stats
+	Disk             DiskStats
 	Uptime           time.Duration
 	MemoryPercentage float32
 	CPUPercentage    float32
 	Temperature      float32
+	VPNReachable     bool
 }
 
 func GetAllStats(temperatureFile string) (Stats, error) {
@@ -54,6 +65,10 @@ func GetAllStats(temperatureFile string) (Stats, error) {
 	stats.Uptime, e = getUptime()
 	if e != nil {
 		err = errors.Join(err, fmt.Errorf("uptime: %w", e))
+	}
+	stats.Disk, e = getDiskUsage("/")
+	if e != nil {
+		err = errors.Join(err, fmt.Errorf("disk: %w", e))
 	}
 	stats.Temperature, e = getBoardTemp(temperatureFile)
 	if e != nil {
@@ -94,6 +109,32 @@ func getNetworkStats() (*network.Stats, error) {
 
 func getUptime() (time.Duration, error) {
 	return uptime.Get()
+}
+
+// CheckVPN tries a TCP connection to the given host:port to verify VPN reachability.
+func CheckVPN(hostPort string) bool {
+	dialer := net.Dialer{Timeout: 3 * time.Second}
+	conn, err := dialer.Dial("tcp", hostPort)
+	if conn != nil {
+		_ = conn.Close()
+	}
+	return err == nil
+}
+
+func getDiskUsage(path string) (DiskStats, error) {
+	var fs syscall.Statfs_t
+	if err := syscall.Statfs(path, &fs); err != nil {
+		return DiskStats{}, err
+	}
+	total := fs.Blocks * uint64(fs.Bsize)
+	free := fs.Bavail * uint64(fs.Bsize)
+	used := total - free
+	return DiskStats{
+		Total:      total,
+		Used:       used,
+		Free:       free,
+		Percentage: float32(used) / float32(total) * 100,
+	}, nil
 }
 
 func getBoardTemp(temperatureFile string) (float32, error) {

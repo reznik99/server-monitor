@@ -2,6 +2,7 @@ package main
 
 import (
 	"flag"
+	"fmt"
 	"os"
 	"time"
 
@@ -10,7 +11,10 @@ import (
 	"github.com/reznik99/server-monitor/internal/monitor"
 )
 
-var testMode = flag.Bool("test", false, "Run a test: collect stats and send a test email alert")
+var (
+	testMode    = flag.Bool("test", false, "Run a test: collect stats and send a test email alert")
+	showVersion = flag.Bool("version", false, "Print version and exit")
+)
 
 var (
 	Version         string  = "Development"                           // Tagged Version of binary (from git)
@@ -18,12 +22,18 @@ var (
 	thresholdTemp   float32 = 60.00                                   // Degrees C
 	thresholdMem    float32 = 75.00                                   // Memory Usage %
 	thresholdCPU    float32 = 75.00                                   // CPU Usage %
+	thresholdDisk   float32 = 85.00                                   // Disk Usage %
 	hostName        string  = "N/A"                                   // Hostname of machine
 	serverName      string  = "N/A"                                   // Custom server name for alert email subject
+	vpnCheckHost    string                                            // Optional VPN host:port to check reachability
 )
 
 func main() {
 	flag.Parse()
+	if *showVersion {
+		fmt.Println("server-monitor", Version)
+		return
+	}
 	startTime := time.Now()
 	defer func() {
 		logrus.Infof("Server-Monitor %s executed in %dms", Version, time.Since(startTime).Milliseconds())
@@ -40,8 +50,10 @@ func main() {
 	thresholdTemp = monitor.FirstOrDefaultFloat(os.Getenv("THRESHOLD_TEMP"), thresholdTemp)
 	thresholdMem = monitor.FirstOrDefaultFloat(os.Getenv("THRESHOLD_MEM"), thresholdMem)
 	thresholdCPU = monitor.FirstOrDefaultFloat(os.Getenv("THRESHOLD_CPU"), thresholdCPU)
+	thresholdDisk = monitor.FirstOrDefaultFloat(os.Getenv("THRESHOLD_DISK"), thresholdDisk)
+	vpnCheckHost = os.Getenv("VPN_CHECK_HOST")
 
-	logrus.Infof("Thresholds - TEMP: %.2fc | MEM: %.2f%% | CPU: %.2f%%", thresholdTemp, thresholdMem, thresholdCPU)
+	logrus.Infof("Thresholds - TEMP: %.2fc | MEM: %.2f%% | CPU: %.2f%% | DISK: %.2f%%", thresholdTemp, thresholdMem, thresholdCPU, thresholdDisk)
 
 	// Get OS statistics
 	stats, err := monitor.GetAllStats(temperatureFile)
@@ -56,7 +68,14 @@ func main() {
 	logrus.Infof("- LoadAvg -> 1m:      %v | 5m: %v | 15m: %v", stats.LoadAvg.Loadavg1, stats.LoadAvg.Loadavg5, stats.LoadAvg.Loadavg15)
 	logrus.Infof("- Network -> Name:    %v | Rx: %v | Tx: %v", stats.Net.Name, monitor.Humanize(stats.Net.RxBytes), monitor.Humanize(stats.Net.TxBytes))
 	logrus.Infof("- Uptime  -> %s", monitor.DurationToString(stats.Uptime))
+	logrus.Infof("- Disk    -> Percent: %.2f%% | Tot:  %v | Used: %v | Free: %v", stats.Disk.Percentage, monitor.Humanize(stats.Disk.Total), monitor.Humanize(stats.Disk.Used), monitor.Humanize(stats.Disk.Free))
 	logrus.Infof("- Temperature  %.2fc", stats.Temperature)
+
+	// VPN check (optional)
+	if vpnCheckHost != "" {
+		stats.VPNReachable = monitor.CheckVPN(vpnCheckHost)
+		logrus.Infof("- VPN     -> Host: %s | Reachable: %v", vpnCheckHost, stats.VPNReachable)
+	}
 
 	// Alerting logic
 	doSendAlert := false
@@ -80,10 +99,18 @@ func main() {
 		logrus.Infof("CPU load avg (15min) %.2f%% above threshold %.2f%%", stats.LoadAvg.Loadavg15*100, thresholdCPU)
 		doSendAlert = true
 	}
+	if stats.Disk.Percentage > thresholdDisk {
+		logrus.Infof("Disk usage %.2f%% above threshold %.2f%%", stats.Disk.Percentage, thresholdDisk)
+		doSendAlert = true
+	}
+	if vpnCheckHost != "" && !stats.VPNReachable {
+		logrus.Warnf("VPN host %s is unreachable", vpnCheckHost)
+		doSendAlert = true
+	}
 
 	if doSendAlert || *testMode {
 		logrus.Info("Sending email alert")
-		if err = monitor.SendEmailAlert(stats, serverName, hostName, Version); err != nil {
+		if err = monitor.SendEmailAlert(stats, serverName, hostName, Version, vpnCheckHost); err != nil {
 			logrus.Errorf("Error sending email alert: %s", err)
 		}
 	}

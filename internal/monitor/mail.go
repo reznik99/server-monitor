@@ -5,12 +5,13 @@ import (
 	"fmt"
 	"html/template"
 	"os"
+	"strconv"
 	"time"
 
 	"github.com/wneessen/go-mail"
 )
 
-func SendEmailAlert(stats Stats, serverName, hostName, version string) error {
+func SendEmailAlert(stats Stats, serverName, hostName, version, vpnCheckHost string) error {
 	// Get email data
 	var From = os.Getenv("SOURCE_EMAIL_ADDRESS")
 	var To = os.Getenv("TARGET_EMAIL_ADDRESS")
@@ -24,6 +25,9 @@ func SendEmailAlert(stats Stats, serverName, hostName, version string) error {
 		MemoryUsedPercent: fmt.Sprintf("%.2f%%", stats.MemoryPercentage),
 		CPUUsagePercent:   fmt.Sprintf("%.2f%%", stats.CPUPercentage),
 		CPUUsageAvg:       fmt.Sprintf("%.2f, %.2f, %.2f", stats.LoadAvg.Loadavg1, stats.LoadAvg.Loadavg5, stats.LoadAvg.Loadavg15),
+		DiskTotal:         Humanize(stats.Disk.Total),
+		DiskUsed:          Humanize(stats.Disk.Used),
+		DiskUsedPercent:   fmt.Sprintf("%.2f%%", stats.Disk.Percentage),
 		RxBytes:           Humanize(stats.Net.RxBytes),
 		TxBytes:           Humanize(stats.Net.TxBytes),
 		UpTime:            DurationToString(stats.Uptime),
@@ -31,6 +35,8 @@ func SendEmailAlert(stats Stats, serverName, hostName, version string) error {
 		ServerName:        serverName,
 		HostName:          hostName,
 		ProgVersion:       version,
+		VPNHost:           vpnCheckHost,
+		VPNReachable:      strconv.FormatBool(stats.VPNReachable),
 	}
 	// Parse email template
 	emailTmpl, err := template.New("EmailAlert").Parse(EmailTemplateStr)
