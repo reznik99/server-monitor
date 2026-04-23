@@ -1,4 +1,4 @@
-package main
+package monitor
 
 import (
 	"fmt"
@@ -17,7 +17,18 @@ import (
 
 const DAY = time.Hour * 24
 
-func GetAllStats() (Stats, error) {
+type Stats struct {
+	Memory           *memory.Stats
+	CPU              *cpu.Stats
+	LoadAvg          *loadavg.Stats
+	Net              *network.Stats
+	Uptime           time.Duration
+	MemoryPercentage float32
+	CPUPercentage    float32
+	Temperature      float32
+}
+
+func GetAllStats(temperatureFile string) (Stats, error) {
 	var err error
 	var stats Stats
 	// Get OS Stats
@@ -41,7 +52,7 @@ func GetAllStats() (Stats, error) {
 	if err != nil {
 		logrus.Errorf("Failed to get uptime: %s", err)
 	}
-	stats.Temperature, err = getBoardTemp()
+	stats.Temperature, err = getBoardTemp(temperatureFile)
 	if err != nil {
 		logrus.Errorf("Failed to get read board temperature: %s", err)
 		err = nil // don't fail
@@ -78,8 +89,8 @@ func getUptime() (time.Duration, error) {
 	return uptime.Get()
 }
 
-func getBoardTemp() (float32, error) {
-	rawTemp, err := os.ReadFile(TEMPERATURE_FILE)
+func getBoardTemp(temperatureFile string) (float32, error) {
+	rawTemp, err := os.ReadFile(temperatureFile)
 	if err != nil {
 		return -1, err
 	}
@@ -91,7 +102,7 @@ func getBoardTemp() (float32, error) {
 	return float32(intFloatTemp) / 1000, nil
 }
 
-func firstOrDefaultFloat(overrideVal string, defaultVal float32) float32 {
+func FirstOrDefaultFloat(overrideVal string, defaultVal float32) float32 {
 	if overrideVal != "" {
 		overrideFlt, err := strconv.ParseFloat(overrideVal, 32)
 		if err != nil {
@@ -104,7 +115,7 @@ func firstOrDefaultFloat(overrideVal string, defaultVal float32) float32 {
 	return defaultVal
 }
 
-func firstOrDefault(val string, defaultVal string) string {
+func FirstOrDefault(val string, defaultVal string) string {
 	if val == "" {
 		return defaultVal
 	} else {
@@ -112,29 +123,30 @@ func firstOrDefault(val string, defaultVal string) string {
 	}
 }
 
-// returns a stringified version of duration including days
-func durationToString(val time.Duration) string {
+// DurationToString returns a stringified version of duration including days
+func DurationToString(val time.Duration) string {
 	uptimeString := val.String()
 	if val >= DAY {
-		days := val / DAY
-		hours := val - days*DAY
+		days := int(val.Hours()) / 24
+		hours := val - time.Duration(days)*DAY
 		uptimeString = fmt.Sprintf("%dd%s", days, hours)
 	}
 	return uptimeString
 }
 
-// Convert byte length into human friendly string such as 950Bytes or 55.55KB or 22.22MB
+// Humanize converts byte length into human friendly string such as 950Bytes or 55.55KB or 22.22MB
 func Humanize(lengthInBytes uint64) string {
 	length := float64(lengthInBytes)
-	if length < 1024 {
+	switch {
+	case length < 1024:
 		return fmt.Sprintf("%.2fBytes", length)
-	} else if length/1024 < 1024 {
+	case length/1024 < 1024:
 		return fmt.Sprintf("%.2fKB", length/1024)
-	} else if length/1024/1024 < 1024 {
+	case length/1024/1024 < 1024:
 		return fmt.Sprintf("%.2fMB", length/1024/1024)
-	} else if length/1024/1024/1024 < 1024 {
+	case length/1024/1024/1024 < 1024:
 		return fmt.Sprintf("%.2fGB", length/1024/1024/1024)
-	} else {
+	default:
 		return fmt.Sprintf("%.2fTB", length/1024/1024/1024/1024)
 	}
 }

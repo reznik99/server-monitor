@@ -5,11 +5,9 @@ import (
 	"time"
 
 	"github.com/joho/godotenv"
-	"github.com/mackerelio/go-osstat/cpu"
-	"github.com/mackerelio/go-osstat/loadavg"
-	"github.com/mackerelio/go-osstat/memory"
-	"github.com/mackerelio/go-osstat/network"
 	"github.com/sirupsen/logrus"
+
+	"github.com/reznik99/server-monitor/internal/monitor"
 )
 
 var (
@@ -22,19 +20,8 @@ var (
 	SERVER_NAME      string  = "N/A"                                   // Custom server name for alert email subject
 )
 
-type Stats struct {
-	Memory           *memory.Stats
-	CPU              *cpu.Stats
-	LoadAvg          *loadavg.Stats
-	Net              *network.Stats
-	Uptime           time.Duration
-	MemoryPercentage float32
-	CPUPercentage    float32
-	Temperature      float32
-}
-
 func init() {
-	// Load enviroment variables
+	// Load environment variables
 	if err := godotenv.Load(); err != nil {
 		logrus.Fatalf("Error loading .env file: %s", err)
 	}
@@ -45,11 +32,11 @@ func init() {
 	}
 
 	// Allow .env override of thresholds and parameters
-	HOST_NAME = firstOrDefault(hostname, HOST_NAME)
-	SERVER_NAME = firstOrDefault(os.Getenv("SERVER_NAME"), SERVER_NAME)
-	THRESHOLD_TEMP = firstOrDefaultFloat(os.Getenv("THRESHOLD_TEMP"), THRESHOLD_TEMP)
-	THRESHOLD_MEM = firstOrDefaultFloat(os.Getenv("THRESHOLD_MEM"), THRESHOLD_MEM)
-	THRESHOLD_CPU = firstOrDefaultFloat(os.Getenv("THRESHOLD_CPU"), THRESHOLD_CPU)
+	HOST_NAME = monitor.FirstOrDefault(hostname, HOST_NAME)
+	SERVER_NAME = monitor.FirstOrDefault(os.Getenv("SERVER_NAME"), SERVER_NAME)
+	THRESHOLD_TEMP = monitor.FirstOrDefaultFloat(os.Getenv("THRESHOLD_TEMP"), THRESHOLD_TEMP)
+	THRESHOLD_MEM = monitor.FirstOrDefaultFloat(os.Getenv("THRESHOLD_MEM"), THRESHOLD_MEM)
+	THRESHOLD_CPU = monitor.FirstOrDefaultFloat(os.Getenv("THRESHOLD_CPU"), THRESHOLD_CPU)
 
 	logrus.Infof("Thresholds - TEMP: %.2fc | MEM: %.2f%% | CPU: %.2f%%", THRESHOLD_TEMP, THRESHOLD_MEM, THRESHOLD_CPU)
 }
@@ -61,18 +48,18 @@ func main() {
 	}()
 
 	// Get OS statistics
-	stats, err := GetAllStats()
+	stats, err := monitor.GetAllStats(TEMPERATURE_FILE)
 	if err != nil {
 		logrus.Fatalf("Error getting statistics: %s", err)
 	}
 
 	// Print statistics
 	logrus.Info("Raw stats:")
-	logrus.Infof("- Memory  -> Percent: %.2f%% | Tot:  %v | Used: %v | Free: %v", stats.MemoryPercentage, Humanize(stats.Memory.Total), Humanize(stats.Memory.Used), Humanize(stats.Memory.Free))
+	logrus.Infof("- Memory  -> Percent: %.2f%% | Tot:  %v | Used: %v | Free: %v", stats.MemoryPercentage, monitor.Humanize(stats.Memory.Total), monitor.Humanize(stats.Memory.Used), monitor.Humanize(stats.Memory.Free))
 	logrus.Infof("- CPU     -> Percent: %.2f%% | Tot:  %v | Idle: %v | System: %v | User: %v", stats.CPUPercentage, stats.CPU.Total, stats.CPU.Idle, stats.CPU.System, stats.CPU.User)
 	logrus.Infof("- LoadAvg -> 1m:      %v | 5m: %v | 15m: %v", stats.LoadAvg.Loadavg1, stats.LoadAvg.Loadavg5, stats.LoadAvg.Loadavg15)
-	logrus.Infof("- Network -> Name:    %v | Rx: %v | Tx: %v", stats.Net.Name, Humanize(stats.Net.RxBytes), Humanize(stats.Net.TxBytes))
-	logrus.Infof("- Uptime  -> %s", durationToString(stats.Uptime))
+	logrus.Infof("- Network -> Name:    %v | Rx: %v | Tx: %v", stats.Net.Name, monitor.Humanize(stats.Net.RxBytes), monitor.Humanize(stats.Net.TxBytes))
+	logrus.Infof("- Uptime  -> %s", monitor.DurationToString(stats.Uptime))
 	logrus.Infof("- Temperature  %.2fc", stats.Temperature)
 
 	// Alerting logic
@@ -100,7 +87,7 @@ func main() {
 
 	if doSendAlert {
 		logrus.Info("Sending email alert")
-		if err = SendEmailAlert(stats); err != nil {
+		if err = monitor.SendEmailAlert(stats, SERVER_NAME, HOST_NAME, Version); err != nil {
 			logrus.Errorf("Error sending email alert: %s", err)
 		}
 	}

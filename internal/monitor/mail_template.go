@@ -1,4 +1,4 @@
-package main
+package monitor
 
 type EmailTemplateData struct {
 	Subject           string

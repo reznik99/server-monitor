@@ -1,0 +1,8 @@
+[Unit]
+Description=Server Monitor - System health check and email alerting
+After=network.target
+
+[Service]
+Type=oneshot
+ExecStart=/usr/local/bin/server-monitor
+EnvironmentFile=/etc/server-monitor/server-monitor.env

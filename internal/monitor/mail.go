@@ -1,4 +1,4 @@
-package main
+package monitor
 
 import (
 	"context"
@@ -10,11 +10,11 @@ import (
 	"github.com/wneessen/go-mail"
 )
 
-func SendEmailAlert(stats Stats) error {
+func SendEmailAlert(stats Stats, serverName, hostName, version string) error {
 	// Get email data
 	var From = os.Getenv("SOURCE_EMAIL_ADDRESS")
 	var To = os.Getenv("TARGET_EMAIL_ADDRESS")
-	var Subject = fmt.Sprintf("%s server-monitor alert", SERVER_NAME)
+	var Subject = serverName + " server-monitor alert"
 
 	var data = EmailTemplateData{
 		Subject:           Subject,
@@ -26,29 +26,29 @@ func SendEmailAlert(stats Stats) error {
 		CPUUsageAvg:       fmt.Sprintf("%.2f, %.2f, %.2f", stats.LoadAvg.Loadavg1, stats.LoadAvg.Loadavg5, stats.LoadAvg.Loadavg15),
 		RxBytes:           Humanize(stats.Net.RxBytes),
 		TxBytes:           Humanize(stats.Net.TxBytes),
-		UpTime:            durationToString(stats.Uptime),
+		UpTime:            DurationToString(stats.Uptime),
 		DateTime:          time.Now().Format(time.RFC822),
-		ServerName:        SERVER_NAME,
-		HostName:          HOST_NAME,
-		ProgVersion:       Version,
+		ServerName:        serverName,
+		HostName:          hostName,
+		ProgVersion:       version,
 	}
 	// Parse email template
 	emailTmpl, err := template.New("EmailAlert").Parse(EmailTemplateStr)
 	if err != nil {
-		return fmt.Errorf("failed to parse email template: %s", err)
+		return fmt.Errorf("failed to parse email template: %w", err)
 	}
 
 	// Create email object
 	msg := mail.NewMsg()
 	msg.Subject(Subject)
 	if err := msg.From(From); err != nil {
-		return fmt.Errorf("invalid from email address '%s': %s", From, err)
+		return fmt.Errorf("invalid from email address '%s': %w", From, err)
 	}
 	if err := msg.To(To); err != nil {
-		return fmt.Errorf("invalid to email address '%s': %s", To, err)
+		return fmt.Errorf("invalid to email address '%s': %w", To, err)
 	}
 	if err := msg.SetBodyHTMLTemplate(emailTmpl, data); err != nil {
-		return fmt.Errorf("failed to set email template: %s", err)
+		return fmt.Errorf("failed to set email template: %w", err)
 	}
 
 	ctx, cancel := context.WithTimeout(context.Background(), time.Second*10)
